@@ -1,14 +1,34 @@
-/**
- * In-Browser Python 3 Interpreter for Phase 1
- * Handles print, variables, arithmetic, types, conversions, input, operators, and strings
- * with syntax error diagnostics, stdout capture, and runtime environment inspection.
- */
+let pyodideInstance = null;
+let pyodidePromise = null;
+
+async function getPyodide() {
+  if (pyodideInstance) return pyodideInstance;
+  if (pyodidePromise) return pyodidePromise;
+  if (typeof window !== "undefined" && window.loadPyodide) {
+    pyodidePromise = window
+      .loadPyodide({
+        indexURL: "https://cdn.jsdelivr.net/pyodide/v0.26.2/full/",
+      })
+      .then((instance) => {
+        pyodideInstance = instance;
+        return instance;
+      })
+      .catch((err) => {
+        console.warn("Pyodide load failed, using JS runtime:", err);
+        return null;
+      });
+    return pyodidePromise;
+  }
+  return null;
+}
 
 export class PythonRuntime {
   constructor() {
     this.stdout = [];
     this.stderr = [];
     this.env = {};
+    // Start pre-loading Pyodide in background
+    getPyodide().catch(() => {});
   }
 
   reset() {
@@ -19,21 +39,63 @@ export class PythonRuntime {
 
   /**
    * Run Python code asynchronously.
-   * If an input() call is encountered, onInputRequested(promptText) is invoked.
-   * @param {string} code
-   * @param {Function} onInputRequested - async callback returning string input
-   * @returns {Promise<{ stdout: string, stderr: string, success: boolean, env: object }>}
+   * Uses real Pyodide WebAssembly Python when available,
+   * with seamless fallback to built-in JS runtime.
    */
   async run(code, onInputRequested = null) {
     this.reset();
-    const lines = code.split(/\r?\n/);
 
+    // Check if Pyodide is available
+    const pyodide = await getPyodide();
+    if (pyodide) {
+      try {
+        const outList = [];
+        const errList = [];
+
+        pyodide.setStdout({
+          batched: (msg) => {
+            outList.push(msg);
+          },
+        });
+        pyodide.setStderr({
+          batched: (msg) => {
+            errList.push(msg);
+          },
+        });
+
+        // Run Python code
+        await pyodide.runPythonAsync(code);
+
+        this.stdout = outList;
+        this.stderr = errList;
+
+        return {
+          stdout: this.stdout.join("\n"),
+          stderr: this.stderr.join("\n"),
+          success: this.stderr.length === 0,
+          env: { ...this.env },
+        };
+      } catch (err) {
+        const cleanErr = (err.message || String(err))
+          .replace(/PythonError: Traceback[^\n]*\n/, "")
+          .trim();
+        this.stderr.push(cleanErr);
+        return {
+          stdout: this.stdout.join("\n"),
+          stderr: this.stderr.join("\n"),
+          success: false,
+          env: { ...this.env },
+        };
+      }
+    }
+
+    // Built-in JS fallback interpreter
+    const lines = code.split(/\r?\n/);
     try {
       for (let i = 0; i < lines.length; i++) {
         const lineNum = i + 1;
         let line = lines[i];
 
-        // Strip comments that are not inside quotes
         line = this.stripComment(line).trim();
         if (!line) continue;
 

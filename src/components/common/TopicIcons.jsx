@@ -10,13 +10,62 @@ import {
   ArrowLeftRight,
   Keyboard,
   Calculator,
-  Quote
+  Quote,
+  GitBranch,
+  Scale,
+  GitCommit,
+  GitFork,
+  Split,
+  Workflow,
+  Cpu,
+  Sliders,
+  LayoutGrid,
+  ShieldCheck,
+  Zap
 } from "lucide-react";
 
 /**
- * Consistent, clean technical icons mapped to each of the 11 Phase 1 topics.
+ * Consistent, clean technical icons mapped to Chapter 1 and Chapter 2 topics.
  */
-export function TopicIcon({ topicNumber, size = 18, className = "" }) {
+export function TopicIcon({ topicNumber, chapterNumber = 1, size = 18, className = "" }) {
+  if (chapterNumber === 2) {
+    switch (topicNumber) {
+      case 1:
+        // What are Conditional Statements?
+        return <GitBranch size={size} className={className} />;
+      case 2:
+        // Comparison Operators
+        return <Scale size={size} className={className} />;
+      case 3:
+        // if Statement
+        return <GitCommit size={size} className={className} />;
+      case 4:
+        // else Statement
+        return <ShieldCheck size={size} className={className} />;
+      case 5:
+        // elif Statement
+        return <Split size={size} className={className} />;
+      case 6:
+        // Multiple Conditions
+        return <Workflow size={size} className={className} />;
+      case 7:
+        // Logical Operators with Conditions
+        return <Cpu size={size} className={className} />;
+      case 8:
+        // Nested if Statements
+        return <GitFork size={size} className={className} />;
+      case 9:
+        // Ternary Operator
+        return <Sliders size={size} className={className} />;
+      case 10:
+        // match-case Statement
+        return <LayoutGrid size={size} className={className} />;
+      default:
+        return <GitBranch size={size} className={className} />;
+    }
+  }
+
+  // Chapter 1
   switch (topicNumber) {
     case 1:
       // What is Programming? -> Terminal prompt

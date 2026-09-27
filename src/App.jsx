@@ -4,8 +4,14 @@ import { Dashboard } from "./components/dashboard/Dashboard";
 import { JourneyView } from "./components/learning/JourneyView";
 import { PhaseComplete } from "./components/completion/PhaseComplete";
 import { StudentModal } from "./components/common/StudentModal";
-import { CustomCursor } from "./components/common/CustomCursor";
-import { TOPICS } from "./data/pythonBasics";
+import { MiniProjectModal } from "./components/dashboard/MiniProjectModal";
+
+import { TOPICS as CH1_TOPICS } from "./data/pythonBasics";
+import { CHAPTER2_TOPICS, CHAPTER2_MINI_PROJECTS } from "./data/pythonDecisions";
+
+// Merge all chapters into a single flat topic list
+const TOPICS = [...CH1_TOPICS, ...CHAPTER2_TOPICS];
+const MINI_PROJECTS = [...CHAPTER2_MINI_PROJECTS];
 import { storageService } from "./services/storageService";
 import { sounds } from "./services/soundEffects";
 
@@ -15,6 +21,9 @@ export function App() {
 
   // Active topic when in journey
   const [activeTopicId, setActiveTopicId] = useState(1);
+
+  // Active Mini Project for modal
+  const [activeMiniProject, setActiveMiniProject] = useState(null);
 
   // Student progress state
   const [studentData, setStudentData] = useState(() => storageService.loadProgress());
@@ -113,8 +122,7 @@ export function App() {
 
   return (
     <div className="app-layout">
-      {/* Desktop Custom Precision Cursor */}
-      <CustomCursor />
+
 
       {/* Top HUD Navbar */}
       <Navbar
@@ -139,6 +147,8 @@ export function App() {
           streakDays={studentData.streakDays}
           completedTopicIds={studentData.completedTopicIds}
           currentTopicId={studentData.currentTopicId}
+          miniProjects={MINI_PROJECTS}
+          onOpenMiniProject={(proj) => setActiveMiniProject(proj)}
           onStartOrContinue={handleStartOrContinue}
           onSelectTopic={handleSelectTopic}
           onViewCompletion={() => setView("completion")}
@@ -178,6 +188,14 @@ export function App() {
         currentName={studentData.studentName}
         onSaveName={handleSaveStudentName}
         onResetProgress={handleResetProgress}
+      />
+
+      {/* Mini Project Interactive Coding Modal */}
+      <MiniProjectModal
+        project={activeMiniProject}
+        isOpen={Boolean(activeMiniProject)}
+        onClose={() => setActiveMiniProject(null)}
+        onAwardXp={handleAwardXp}
       />
     </div>
   );
